@@ -107,7 +107,7 @@ const loadMatches = async () => {
   }
 
   // Tạo map id → name
-  const teamMap = {};
+  const teamMap: Record<string, string> = {};  // ← Khai báo type rõ ràng
   teamsData?.forEach(t => teamMap[t.id] = t.fullName);
 
   // Bước 4: Gán tên đội vào matches

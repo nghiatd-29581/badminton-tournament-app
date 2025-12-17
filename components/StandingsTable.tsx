@@ -77,7 +77,7 @@ export default function StandingsTable() {
         .in('id', teamIds);
 
       // 5. Tạo map team_id → team info
-      const teamMap = {};
+      const teamMap: Record<string, { name: string; members?: string[] }> = {};
       teamsData?.forEach(t => {
         teamMap[t.id] = {
           name: t.name || 'Đội không rõ',
@@ -128,7 +128,8 @@ export default function StandingsTable() {
       </div>
 
       {standings.map((s, index) => {
-        const membersStr = s.team.members?.length > 0 ? s.team.members.join(' & ') : '';
+        const membersStr = Array.isArray(s.team.members) && s.team.members.length > 0
+         ? s.team.members.join(' & '): '';
 
         return (
           <div
