@@ -14,7 +14,7 @@ interface Props {
 export default function AdminForm({ onCreate }: Props) {
   const [name, setName] = useState('');
   const [numTeams, setNumTeams] = useState(4);
-  const [teamMembers, setTeamMembers] = useState<string[]>(['', '', '', '']);
+  const [teamMembers, setTeamMembers] = useState<string[]>(['', '', '', '','']);
   const [loading, setLoading] = useState(false);
 
   const handleTeamMembersChange = (index: number, value: string) => {
@@ -46,6 +46,7 @@ export default function AdminForm({ onCreate }: Props) {
       const teamData = teamMembers.map((membersStr, i) => ({
         tournament_id,
         name: `Đội ${i + 1}`,
+        fullName: membersStr.trim(),
         members: membersStr.split(',').map(m => m.trim()).filter(Boolean),
       }));
 
@@ -62,7 +63,7 @@ export default function AdminForm({ onCreate }: Props) {
       );
 
       // 4. Tạo matches Round Robin
-      const matches = generateRoundRobin(teamsInserted.map(t => ({ id: t.id, name: t.name })));
+      const matches = generateRoundRobin(teamsInserted.map(t => ({ id: t.id, name: t.fullName })));
       await supabase.from('matches').insert(
         matches.map(m => ({ ...m, tournament_id }))
       );
@@ -71,8 +72,8 @@ export default function AdminForm({ onCreate }: Props) {
       onCreate?.(tournament_id);
       // Reset form
       setName('');
-      setNumTeams(4);
-      setTeamMembers(Array(4).fill(''));
+      setNumTeams(0);
+      setTeamMembers(Array(0).fill(''));
     } catch (err: any) {
       alert('Lỗi: ' + (err.message || 'Không thể tạo giải đấu'));
     } finally {

@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 interface Team {
   id: string;
   name: string;
+  fullName: string;
 }
 
 interface Match {
@@ -95,7 +96,7 @@ const loadMatches = async () => {
   // Bước 3: Fetch tên teams
   const { data: teamsData, error: teamsError } = await supabase
     .from('teams')
-    .select('id, name')
+    .select('id, name, fullName')
     .in('id', teamIds);
 
   console.log('Teams data:', teamsData);
@@ -107,13 +108,13 @@ const loadMatches = async () => {
 
   // Tạo map id → name
   const teamMap = {};
-  teamsData?.forEach(t => teamMap[t.id] = t.name);
+  teamsData?.forEach(t => teamMap[t.id] = t.fullName);
 
   // Bước 4: Gán tên đội vào matches
   const enrichedMatches = matchesData.map(m => ({
     ...m,
-    team1: { id: m.team1_id, name: teamMap[m.team1_id] || 'Đội không rõ' },
-    team2: { id: m.team2_id, name: teamMap[m.team2_id] || 'Đội không rõ' },
+    team1: { id: m.team1_id, fullName: teamMap[m.team1_id] || 'Đội không rõ' },
+    team2: { id: m.team2_id, fullName: teamMap[m.team2_id] || 'Đội không rõ' },
   }));
 
   setMatches(enrichedMatches);
@@ -166,7 +167,7 @@ const loadMatches = async () => {
       {matches.map((m) => (
         <div key={m.id} className="border rounded-lg p-4 bg-white shadow hover:shadow-md transition">
           <div className="font-semibold text-lg">
-            {m.team1.name} vs {m.team2.name}
+            {m.team1.fullName} vs {m.team2.fullName}
           </div>
           <div className="text-sm text-gray-600 mt-1">
             Trạng thái: <span className={`font-medium ${m.status === 'pending' ? 'text-orange-600' : m.status === 'ongoing' ? 'text-green-600' : 'text-blue-600'}`}>

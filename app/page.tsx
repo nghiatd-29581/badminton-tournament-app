@@ -49,17 +49,6 @@ export default async function Home() {
               <p className="text-white/80 text-sm">Tỷ số real-time & bảng xếp hạng</p>
             </div>
           </Link>
-
-          {/* Audience / Info Button */}
-          <Link href="/live">
-            <div className="group bg-white/20 backdrop-blur-lg rounded-2xl p-8 text-center hover:bg-white/30 transition-all duration-300 transform hover:scale-105 shadow-2xl border border-white/30">
-              <div className="mx-auto w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-500/40 transition">
-                <Users className="w-10 h-10 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-2">Khán giả</h3>
-              <p className="text-white/80 text-sm">Theo dõi giải đấu trên điện thoại</p>
-            </div>
-          </Link>
         </div>
 
         {/* Footer note */}

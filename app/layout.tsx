@@ -47,7 +47,7 @@ export default function RootLayout({
         {/* Footer */}
         <footer className="bg-gray-900 text-white py-6 mt-16">
           <div className="container mx-auto px-4 text-center">
-            <p>© 2025 Giải Cầu Lông Nội Bộ - Real-time by Next.js + Supabase</p>
+            <p>© 2025 - Dev By Nghĩa, Trần Đắc</p>
           </div>
         </footer>
       </body>
