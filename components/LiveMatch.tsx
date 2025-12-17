@@ -160,8 +160,15 @@ export default function LiveMatch() {
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
         {Array.from(matches.values()).map((match) => {
-          const team1Name = match.team1.members?.length > 0 ? match.team1.members.join(' & ') : match.team1.name;
-          const team2Name = match.team2.members?.length > 0 ? match.team2.members.join(' & ') : match.team2.name;
+      const team1Name = 
+        Array.isArray(match.team1.members) && match.team1.members.length > 0
+          ? match.team1.members.join(' & ')
+          : match.team1.name;
+
+      const team2Name = 
+        Array.isArray(match.team2.members) && match.team2.members.length > 0
+          ? match.team2.members.join(' & ')
+          : match.team2.name;
 
           return (
             <motion.div
