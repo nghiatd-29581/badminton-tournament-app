@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { generateRoundRobin } from '@/lib/utils';
+import { generateRoundRobin, generateRoundRobinWithCourts } from '@/lib/utils';
 import { Trophy } from 'lucide-react';
 import React from 'react';
 
@@ -22,7 +22,7 @@ export default function AdminForm({ onCreate }: Props) {
     updated[index] = value;
     setTeamMembers(updated);
   };
-
+  const [numCourts, setNumCourts] = useState(2);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return alert('Vui lòng nhập tên giải đấu');
@@ -62,11 +62,11 @@ export default function AdminForm({ onCreate }: Props) {
         teamsInserted.map(t => ({ tournament_id, team_id: t.id }))
       );
 
-      // 4. Tạo matches Round Robin
-      const matches = generateRoundRobin(teamsInserted.map(t => ({ id: t.id, name: t.fullName })));
-      await supabase.from('matches').insert(
-        matches.map(m => ({ ...m, tournament_id }))
-      );
+
+
+      const matches = generateRoundRobinWithCourts(teamsInserted.map(t => ({ id: t.id, name: t.fullName })), numCourts);
+
+      await supabase.from('matches').insert(matches.map(m => ({ ...m, tournament_id })));
 
       alert('🎉 Tạo giải đấu thành công!');
       onCreate?.(tournament_id);
@@ -122,7 +122,19 @@ export default function AdminForm({ onCreate }: Props) {
           className="w-full md:w-64 px-5 py-4 border-2 border-gray-300 rounded-xl focus:border-primary focus:outline-none text-lg"
         />
       </div>
-
+      <div>
+        <label className="block text-lg font-semibold mb-3 text-gray-800">
+          Số sân thi đấu (1-10)
+        </label>
+        <input
+          type="number"
+          min="1"
+          max="10"
+          value={numCourts}
+          onChange={e => setNumCourts(Math.max(1, Math.min(10, +e.target.value)))}
+          className="w-full md:w-64 px-5 py-4 border-2 border-gray-300 rounded-xl focus:border-primary focus:outline-none text-lg"
+        />
+      </div>
       {/* Danh sách thành viên từng đội */}
       <div>
         <label className="block text-lg font-semibold mb-4 text-gray-800">

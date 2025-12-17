@@ -88,7 +88,9 @@ export default function LiveMatch() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'matches' },
         (payload) => {
+          console.log('Realtime event received on matches:', payload); // Debug để kiểm tra
           if (payload.eventType === 'UPDATE') {
+
             const updated = payload.new;
 
             if (updated.status !== 'ongoing') {
@@ -100,7 +102,10 @@ export default function LiveMatch() {
               });
               return;
             }
-
+            // Nếu INSERT mới (trận mới bắt đầu)
+            if (payload.old.status === 'pending' && payload.new.status === 'ongoing') {
+              fetchAllData(); // Fetch lại để lấy tên đội
+            }
             // Chỉ update score nếu là trận ongoing
             setMatches(prev => {
               const match = prev.get(updated.id);
@@ -114,6 +119,8 @@ export default function LiveMatch() {
               });
               return newMap;
             });
+
+
           }
 
           // Nếu INSERT mới (trận mới bắt đầu)
