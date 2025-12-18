@@ -64,9 +64,9 @@ export default function MatchList({ tournamentId: propTournamentId, mode, onSele
         .select('id, status, score_team1, score_team2, team1_id, team2_id, round_num, court_num')
         .eq('tournament_id', tid);
 
-      if (mode === 'referee') {
-        query = query.eq('status', 'pending');
-      }
+      // if (mode === 'referee') {
+      //   query = query.eq('status', 'pending');
+      // }
 
       const { data: matchesData, error: matchesError } = await query;
 
@@ -177,7 +177,7 @@ export default function MatchList({ tournamentId: propTournamentId, mode, onSele
           {/* Tên trận đấu */}
           <div className="text-center mb-4">
             <h3 className="text-2xl font-bold text-gray-800">
-              {m.team1.fullName} <span className="text-primary">vs</span> {m.team2.fullName}
+              {m.team1.fullName} <span className="text-primary">VS</span> {m.team2.fullName}
             </h3>
           </div>
 
@@ -195,7 +195,15 @@ export default function MatchList({ tournamentId: propTournamentId, mode, onSele
               {m.status === 'pending' ? 'Chưa đấu' : m.status === 'ongoing' ? 'Đang đấu' : 'Hoàn thành'}
             </span>
           </div>
-
+          {/* Nút bắt đầu cho referee */}
+          {mode === 'referee' && m.status === 'ongoing' && (
+            <button
+              onClick={() => onSelect?.(m)}
+              className="w-full bg-primary hover:bg-green-700 text-white font-bold text-xl py-4 rounded-xl shadow-lg transform hover:scale-105 transition"
+            >
+              Tiếp tục trận đấu
+            </button>
+          )}
           {/* Tỷ số nếu đã hoàn thành */}
           {m.status === 'completed' && (
             <div className="text-center text-3xl font-extrabold text-primary mb-4">
