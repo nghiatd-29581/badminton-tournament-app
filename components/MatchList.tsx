@@ -17,6 +17,8 @@ interface Match {
   status: string;
   score_team1?: number;
   score_team2?: number;
+  round_num?: number;
+  court_num?: number;
 }
 
 interface Props {
@@ -31,8 +33,7 @@ export default function MatchList({ tournamentId: propTournamentId, mode, onSele
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Nếu không truyền tournamentId → fetch latest tournament
-    const fetchTournamentId = async () => {
+    const fetchTournamentId = async (): Promise<string | null> => {
       if (propTournamentId) {
         setTournamentId(propTournamentId);
         return propTournamentId;
@@ -50,76 +51,71 @@ export default function MatchList({ tournamentId: propTournamentId, mode, onSele
       return id;
     };
 
-    // components/MatchList.tsx - Chỉ sửa phần loadMatches
+    const loadMatches = async () => {
+      const tid = await fetchTournamentId();
+      if (!tid) {
+        setLoading(false);
+        return;
+      }
 
-const loadMatches = async () => {
-  const tid = await fetchTournamentId();
-  if (!tid) {
-    setLoading(false);
-    return;
-  }
+      // Fetch matches đơn giản (không nested)
+      let query = supabase
+        .from('matches')
+        .select('id, status, score_team1, score_team2, team1_id, team2_id, round_num, court_num')
+        .eq('tournament_id', tid);
 
-  // Bước 1: Fetch matches đơn giản (không nested)
-  let query = supabase
-    .from('matches')
-    .select('*')
-    .eq('tournament_id', tid);
+      // if (mode === 'referee') {
+      //   query = query.eq('status', 'pending');
+      // }
 
-  if (mode === 'referee') {
-    query = query.eq('status', 'pending');
-  }
+      const { data: matchesData, error: matchesError } = await query;
 
-  const { data: matchesData, error: matchesError } = await query;
+      if (matchesError || !matchesData) {
+        console.error('Không fetch được matches:', matchesError);
+        setMatches([]);
+        setLoading(false);
+        return;
+      }
 
-  console.log('Matches raw data:', matchesData);
-  console.log('Matches error:', matchesError);
+      if (matchesData.length === 0) {
+        setMatches([]);
+        setLoading(false);
+        return;
+      }
 
-  if (matchesError || !matchesData) {
-    console.error('Không fetch được matches:', matchesError);
-    setMatches([]);
-    setLoading(false);
-    return;
-  }
+      // Lấy tất cả team_id duy nhất
+      const teamIds = Array.from(
+        new Set(matchesData.flatMap(m => [m.team1_id, m.team2_id].filter(Boolean)))
+      );
 
-  if (matchesData.length === 0) {
-    setMatches([]);
-    setLoading(false);
-    return;
-  }
+      // Fetch tên teams (bao gồm fullName nếu có)
+      const { data: teamsData } = await supabase
+        .from('teams')
+        .select('id, name, fullName')
+        .in('id', teamIds);
 
-  // Bước 2: Lấy tất cả team_id duy nhất
-  const teamIds = [...new Set([
-    ...matchesData.map(m => m.team1_id),
-    ...matchesData.map(m => m.team2_id)
-  ])].filter(Boolean);
+      // Tạo map id → fullName (ưu tiên fullName, fallback name)
+      const teamMap: Record<string, string> = {};
+      teamsData?.forEach(t => {
+        teamMap[t.id] = t.fullName || t.name || 'Đội không rõ';
+      });
 
-  // Bước 3: Fetch tên teams
-  const { data: teamsData, error: teamsError } = await supabase
-    .from('teams')
-    .select('id, name, fullName')
-    .in('id', teamIds);
+      // Enrich matches
+      const enrichedMatches: Match[] = matchesData.map(m => ({
+        id: m.id,
+        status: m.status,
+        score_team1: m.score_team1 ?? 0,
+        score_team2: m.score_team2 ?? 0,
+        round_num: m.round_num ?? 0,
+        court_num: m.court_num ?? 0,
+        team1: { id: m.team1_id, name: '', fullName: teamMap[m.team1_id] || 'Đội không rõ' },
+        team2: { id: m.team2_id, name: '', fullName: teamMap[m.team2_id] || 'Đội không rõ' },
+      }));
 
-  console.log('Teams data:', teamsData);
-  console.log('Teams error:', teamsError);
+      setMatches(enrichedMatches);
+      setLoading(false);
+    };
 
-  if (teamsError) {
-    console.error('Lỗi fetch teams:', teamsError);
-  }
-
-  // Tạo map id → name
-  const teamMap: Record<string, string> = {};  // ← Khai báo type rõ ràng
-  teamsData?.forEach(t => teamMap[t.id] = t.fullName);
-
-  // Bước 4: Gán tên đội vào matches
-  const enrichedMatches = matchesData.map(m => ({
-    ...m,
-    team1: { id: m.team1_id, fullName: teamMap[m.team1_id] || 'Đội không rõ' },
-    team2: { id: m.team2_id, fullName: teamMap[m.team2_id] || 'Đội không rõ' },
-  }));
-
-  setMatches(enrichedMatches);
-  setLoading(false);
-};
     loadMatches();
 
     // Real-time subscription
@@ -134,7 +130,7 @@ const loadMatches = async () => {
             table: 'matches',
             filter: `tournament_id=eq.${tournamentId}`,
           },
-          () => loadMatches()  // Reload khi có thay đổi
+          () => loadMatches()
         )
         .subscribe();
 
@@ -145,16 +141,16 @@ const loadMatches = async () => {
   }, [propTournamentId, mode, tournamentId]);
 
   if (loading) {
-    return <p className="text-center py-8">Đang tải danh sách trận đấu...</p>;
+    return <p className="text-center py-8 text-xl">Đang tải danh sách trận đấu...</p>;
   }
 
   if (!tournamentId) {
-    return <p className="text-center py-8 text-red-600">Chưa có giải đấu nào được tạo.</p>;
+    return <p className="text-center py-8 text-red-600 text-xl">Chưa có giải đấu nào được tạo.</p>;
   }
 
   if (matches.length === 0) {
     return (
-      <p className="text-center py-8 text-gray-600">
+      <p className="text-center py-8 text-gray-600 text-xl">
         {mode === 'referee'
           ? 'Hiện tại chưa có trận đấu nào chờ diễn ra.'
           : 'Chưa có trận đấu nào trong giải.'}
@@ -163,28 +159,65 @@ const loadMatches = async () => {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {matches.map((m) => (
-        <div key={m.id} className="border rounded-lg p-4 bg-white shadow hover:shadow-md transition">
-          <div className="font-semibold text-lg">
-            {m.team1.fullName} vs {m.team2.fullName}
+        <div
+          key={m.id}
+          className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200 hover:shadow-2xl transition-all"
+        >
+          {/* Round và Sân - Chỉ hiển thị cho referee */}
+          {mode === 'referee' && (m.round_num || m.court_num) && (
+            <div className="mb-4 text-center">
+              <span className="inline-block bg-primary text-white px-4 py-2 rounded-full font-bold text-lg">
+                Round {m.round_num || '?'} - Sân {m.court_num || '?'}
+              </span>
+            </div>
+          )}
+
+          {/* Tên trận đấu */}
+          <div className="text-center mb-4">
+            <h3 className="text-2xl font-bold text-gray-800">
+              {m.team1.fullName} <span className="text-primary">VS</span> {m.team2.fullName}
+            </h3>
           </div>
-          <div className="text-sm text-gray-600 mt-1">
-            Trạng thái: <span className={`font-medium ${m.status === 'pending' ? 'text-orange-600' : m.status === 'ongoing' ? 'text-green-600' : 'text-blue-600'}`}>
+
+          {/* Trạng thái */}
+          <div className="text-center mb-4">
+            <span
+              className={`inline-block px-4 py-2 rounded-full text-white font-semibold ${
+                m.status === 'pending'
+                  ? 'bg-orange-500'
+                  : m.status === 'ongoing'
+                  ? 'bg-green-500'
+                  : 'bg-blue-500'
+              }`}
+            >
               {m.status === 'pending' ? 'Chưa đấu' : m.status === 'ongoing' ? 'Đang đấu' : 'Hoàn thành'}
             </span>
           </div>
+          {/* Nút bắt đầu cho referee */}
+          {mode === 'referee' && m.status === 'ongoing' && (
+            <button
+              onClick={() => onSelect?.(m)}
+              className="w-full bg-primary hover:bg-green-700 text-white font-bold text-xl py-4 rounded-xl shadow-lg transform hover:scale-105 transition"
+            >
+              Tiếp tục trận đấu
+            </button>
+          )}
+          {/* Tỷ số nếu đã hoàn thành */}
           {m.status === 'completed' && (
-            <div className="text-sm mt-2">
-              Tỷ số: {m.score_team1 ?? 0} - {m.score_team2 ?? 0}
+            <div className="text-center text-3xl font-extrabold text-primary mb-4">
+              {m.score_team1} - {m.score_team2}
             </div>
           )}
+
+          {/* Nút bắt đầu cho referee */}
           {mode === 'referee' && m.status === 'pending' && (
             <button
               onClick={() => onSelect?.(m)}
-              className="mt-3 w-full bg-primary text-white py-2 rounded hover:bg-green-700 transition"
+              className="w-full bg-primary hover:bg-green-700 text-white font-bold text-xl py-4 rounded-xl shadow-lg transform hover:scale-105 transition"
             >
-              Bắt đầu trận
+              Bắt đầu trận đấu
             </button>
           )}
         </div>

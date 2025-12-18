@@ -16,7 +16,7 @@ export default async function Home() {
         <HeroSection />
 
         {/* Quick Action Buttons */}
-        <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl w-full">
+        <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl w-full">
           {/* Admin Button */}
           <Link href="/admin">
             <div className="group bg-white/20 backdrop-blur-lg rounded-2xl p-8 text-center hover:bg-white/30 transition-all duration-300 transform hover:scale-105 shadow-2xl border border-white/30">

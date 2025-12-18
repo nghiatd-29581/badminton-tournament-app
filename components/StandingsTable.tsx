@@ -103,6 +103,7 @@ export default function StandingsTable() {
     const channel = supabase.channel('standings')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'standings' }, fetchStandings)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, fetchStandings)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matches', filter: 'status=eq.completed' }, fetchStandings)  // Thêm lắng nghe matches completed
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };

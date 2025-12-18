@@ -28,6 +28,47 @@ export function generateRoundRobin(teams: { id: string; name: string }[]) {
   return matches;
 }
 
+
+// Function to generate Round Robin with rounds and courts
+export function generateRoundRobinWithCourts(teams: { id: string; name: string }[], numCourts: number) {
+  let n = teams.length;
+  if (n % 2 === 1) {
+    n += 1;  // Add bye for odd
+    teams.push({ id: 'bye', name: 'Bye' }); // Dummy bye
+  }
+
+  const matches = [];
+  let roundNum = 0;
+
+  const teamArray = [...teams];
+
+  for (let r = 0; r < n - 1; r++) {
+    roundNum++;
+    const roundMatches = [];
+    for (let i = 0; i < n / 2; i++) {
+      const team1 = teamArray[i];
+      const team2 = teamArray[n - 1 - i];
+      if (team1.id !== 'bye' && team2.id !== 'bye') {
+        roundMatches.push({
+          team1_id: team1.id,
+          team2_id: team2.id,
+          status: 'pending',
+          round_num: roundNum,
+          court_num: (roundMatches.length % numCourts) + 1,  // Assign court 1 to numCourts
+        });
+      }
+    }
+    matches.push(...roundMatches);
+
+    // Rotate teams
+    teamArray.splice(1, 0, teamArray.pop()!);
+  }
+
+  // Remove bye if added
+  return matches.filter(m => m.team1_id !== 'bye' && m.team2_id !== 'bye');
+}
+
+
 // Calculate points after match end
 // Winner +3, Loser +1
 export async function updateStandings(match: { tournament_id: string; winner_id: string; team1_id: string; team2_id: string }) {
